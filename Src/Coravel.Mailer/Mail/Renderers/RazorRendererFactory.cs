@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.ObjectPool;
 
@@ -30,20 +31,24 @@ namespace Coravel.Mailer.Mail.Renderers
         public static RazorRenderer MakeInstance(IConfiguration config)
         {
             var services = new ServiceCollection();
-            string appDirectoryPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-            string appDirectory2 = Directory.GetCurrentDirectory();
-
-            Console.WriteLine(appDirectoryPath);
-            Console.WriteLine(appDirectory2);
+            var appDirectoryPath = Directory.GetCurrentDirectory();
+            var fileProvider = new PhysicalFileProvider(appDirectoryPath);
 
             var webhostBuilder = new WebHostBuilder().ConfigureServices(services =>
             {
                 services.AddSingleton(config);
 
+                services.AddSingleton<IHostEnvironment>(new HostingEnvironment() {
+                    ApplicationName = "Mailer",
+                    ContentRootFileProvider = fileProvider,
+                    ContentRootPath = appDirectoryPath,
+                    EnvironmentName = "Development"
+                });
+
                 services.Configure<MvcRazorRuntimeCompilationOptions>(options =>
                 {
                     options.FileProviders.Clear();
-                    options.FileProviders.Add(new PhysicalFileProvider(appDirectoryPath));
+                    options.FileProviders.Add(fileProvider);
                 });
 
                 services.AddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();

@@ -39,9 +39,9 @@ namespace Coravel
         public static IServiceCollection AddFileLogMailer(this IServiceCollection services, IConfiguration config)
         {
             var globalFrom = GetGlobalFromRecipient(config);
-            RazorRenderer renderer = RazorRendererFactory.MakeInstance(config);
-            var mailer = new FileLogMailer(renderer, globalFrom);
-            services.AddSingleton<IMailer>(mailer);
+            services.AddSingleton<IMailer>(p => 
+                new FileLogMailer(p.GetRequiredService<RazorRenderer>(), globalFrom));
+            services.AddScoped<RazorRenderer>();
             return services;
         }
 
@@ -54,17 +54,18 @@ namespace Coravel
         public static IServiceCollection AddSmtpMailer(this IServiceCollection services, IConfiguration config, RemoteCertificateValidationCallback certCallback)
         {
             var globalFrom = GetGlobalFromRecipient(config);
-            RazorRenderer renderer = RazorRendererFactory.MakeInstance(config);
-            IMailer mailer = new SmtpMailer(
-                renderer,
-                config.GetValue<string>("Coravel:Mail:Host", ""),
-                config.GetValue<int>("Coravel:Mail:Port", 0),
-                config.GetValue<string>("Coravel:Mail:Username", null),
-                config.GetValue<string>("Coravel:Mail:Password", null),
-                globalFrom,
-                certCallback
+
+            services.AddSingleton<IMailer>(p =>
+                new SmtpMailer(
+                    p.GetRequiredService<RazorRenderer>(),
+                    config.GetValue<string>("Coravel:Mail:Host", ""),
+                    config.GetValue<int>("Coravel:Mail:Port", 0),
+                    config.GetValue<string>("Coravel:Mail:Username", null),
+                    config.GetValue<string>("Coravel:Mail:Password", null),
+                    globalFrom,
+                    certCallback)
             );
-            services.AddSingleton<IMailer>(mailer);
+            services.AddScoped<RazorRenderer>();
             return services;
         }
 
@@ -87,9 +88,9 @@ namespace Coravel
         public static IServiceCollection AddCustomMailer(this IServiceCollection services, IConfiguration config, CustomMailer.SendAsyncFunc sendMailAsync)
         {
             var globalFrom = GetGlobalFromRecipient(config);
-            RazorRenderer renderer = RazorRendererFactory.MakeInstance(config);
-            var mailer = new CustomMailer(renderer, sendMailAsync, globalFrom);
-            services.AddSingleton<IMailer>(mailer);
+            services.AddSingleton<IMailer>(p => 
+                new CustomMailer(p.GetRequiredService<RazorRenderer>(), sendMailAsync, globalFrom));
+            services.AddScoped<RazorRenderer>();
             return services;
         }
 

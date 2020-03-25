@@ -1,13 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Coravel.Mailer.Mail.Helpers;
 using Coravel.Mailer.Mail.Interfaces;
 using Coravel.Mailer.Mail.Renderers;
-using Microsoft.Extensions.Configuration;
 
 namespace Coravel.Mailer.Mail.Mailers
 {

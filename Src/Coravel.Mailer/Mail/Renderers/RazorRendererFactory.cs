@@ -1,7 +1,6 @@
-using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation;
 using Microsoft.Extensions.Configuration;
@@ -38,16 +37,15 @@ namespace Coravel.Mailer.Mail.Renderers
             {
                 services.AddSingleton(config);
 
-                services.AddSingleton<IHostEnvironment>(new HostingEnvironment() {
-                    ApplicationName = "Mailer",
-                    ContentRootFileProvider = fileProvider,
-                    ContentRootPath = appDirectoryPath,
-                    EnvironmentName = "Development"
-                });
+                // services.AddSingleton<IHostEnvironment>(new HostingEnvironment()
+                // {
+                //     ApplicationName = "Mailer",
+                //     ContentRootFileProvider = fileProvider,
+                //     ContentRootPath = appDirectoryPath
+                // });
 
                 services.Configure<MvcRazorRuntimeCompilationOptions>(options =>
                 {
-                    options.FileProviders.Clear();
                     options.FileProviders.Add(fileProvider);
                 });
 
@@ -58,7 +56,7 @@ namespace Coravel.Mailer.Mail.Renderers
                 services.AddSingleton<DiagnosticSource>(diagnosticSource);
 
                 services.AddLogging();
-                services.AddMvc();
+                services.AddRazorPages();
                 services.AddSingleton<RazorRenderer>();
             }).UseStartup<DummyStartup>().Build();
 
@@ -67,7 +65,7 @@ namespace Coravel.Mailer.Mail.Renderers
 
         public class DummyStartup
         {
-            public void Configure()
+            public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
             {
 
             }

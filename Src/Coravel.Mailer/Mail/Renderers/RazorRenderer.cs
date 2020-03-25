@@ -79,15 +79,15 @@ namespace Coravel.Mailer.Mail.Renderers
             viewBag.PrimaryColor = this._primaryColor;
         }
 
-        private IView FindView(ActionContext actionContext, string viewName)
+        private IView FindView(ActionContext actionContext, string viewPath)
         {
-            var getViewResult = this._viewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: true);
+            var getViewResult = this._viewEngine.GetView(viewPath, viewPath, false);
             if (getViewResult.Success)
             {
                 return getViewResult.View;
             }
 
-            var findViewResult = this._viewEngine.FindView(actionContext, viewName, isMainPage: true);
+            var findViewResult = this._viewEngine.FindView(actionContext, viewPath, isMainPage: false);
             if (findViewResult.Success)
             {
                 return findViewResult.View;
@@ -96,7 +96,7 @@ namespace Coravel.Mailer.Mail.Renderers
             var searchedLocations = getViewResult.SearchedLocations.Concat(findViewResult.SearchedLocations);
             var errorMessage = string.Join(
                 Environment.NewLine,
-                new[] { $"Unable to find view '{viewName}'. The following locations were searched:" }.Concat(searchedLocations)); ;
+                new[] { $"Unable to find view '{viewPath}'. The following locations were searched:" }.Concat(searchedLocations)); ;
 
             throw new InvalidOperationException(errorMessage);
         }

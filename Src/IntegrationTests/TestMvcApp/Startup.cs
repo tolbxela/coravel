@@ -26,7 +26,7 @@ namespace TestMvcApp
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            services.AddControllersWithViews().AddRazorRuntimeCompilation();
+            services.AddRazorPages();
 
             services.AddCache();
 

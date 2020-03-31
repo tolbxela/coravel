@@ -7,6 +7,7 @@ using Coravel.Mailer.Mail.Mailers;
 using Coravel.Mailer.Mail.Renderers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using RazorLight;
 
 namespace Coravel
 {
@@ -39,9 +40,9 @@ namespace Coravel
         public static IServiceCollection AddFileLogMailer(this IServiceCollection services, IConfiguration config)
         {
             var globalFrom = GetGlobalFromRecipient(config);
-            services.AddSingleton<IMailer>(p => 
+            services.AddSingleton<IMailer>(p =>
                 new FileLogMailer(p.GetRequiredService<RazorRenderer>(), globalFrom));
-            services.AddScoped<RazorRenderer>();
+            RegisterRazorRenderer(services);
             return services;
         }
 
@@ -65,7 +66,7 @@ namespace Coravel
                     globalFrom,
                     certCallback)
             );
-            services.AddScoped<RazorRenderer>();
+            RegisterRazorRenderer(services);
             return services;
         }
 
@@ -90,7 +91,7 @@ namespace Coravel
             var globalFrom = GetGlobalFromRecipient(config);
             services.AddSingleton<IMailer>(p => 
                 new CustomMailer(p.GetRequiredService<RazorRenderer>(), sendMailAsync, globalFrom));
-            services.AddScoped<RazorRenderer>();
+            RegisterRazorRenderer(services);
             return services;
         }
 
@@ -107,6 +108,17 @@ namespace Coravel
             {
                 return null;
             }
+        }
+
+        private static void RegisterRazorRenderer(IServiceCollection services)
+        {
+            services.AddSingleton<IRazorLightEngine>(p => {
+                return new RazorLightEngineBuilder()
+                .UseFileSystemProject(AppDomain.CurrentDomain.BaseDirectory)
+                .UseMemoryCachingProvider()
+                .Build();
+            });
+            services.AddScoped<RazorRenderer>();
         }
     }
 }

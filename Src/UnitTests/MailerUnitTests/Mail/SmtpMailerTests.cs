@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Coravel.Mailer.Mail;
 using Coravel.Mailer.Mail.Mailers;
 using Coravel.Mailer.Mail.Renderers;
+using MailerUnitTests.Mail.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
 using UnitTests.Mail.Shared.Mailables;
@@ -16,7 +17,7 @@ namespace UnitTests.Mail
         [Fact]
         public async Task SmtpMailerRenderSucessful()
         {
-            var renderer = RazorRendererFactory.MakeInstance(new ConfigurationBuilder().Build());
+            var renderer = Helpers.GetRenderer();
             var mailer = new SmtpMailer(renderer, "dummy", 1, "dummy", "dummy");
 
             string message = await mailer.RenderAsync(
@@ -41,7 +42,7 @@ namespace UnitTests.Mail
         [InlineData("username", "password", true)]
         public void SmtpMailerUseAuthentication(string username, string password, bool shouldUseAuthentication)
         {
-            var renderer = RazorRendererFactory.MakeInstance(new ConfigurationBuilder().Build());
+            var renderer = Helpers.GetRenderer();
             var mailer = new SmtpMailer(renderer, "dummy", 1, username, password);
             Assert.Equal(mailer.UseSMTPAuthentication(), shouldUseAuthentication);
         }

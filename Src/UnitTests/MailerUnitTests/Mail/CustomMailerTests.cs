@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Coravel.Mailer.Mail;
 using Coravel.Mailer.Mail.Mailers;
 using Coravel.Mailer.Mail.Renderers;
+using MailerUnitTests.Mail.Shared;
 using Microsoft.Extensions.Configuration;
 using UnitTests.Mail.Shared.Mailables;
 using Xunit;
@@ -71,7 +72,7 @@ namespace UnitTests.Mail
                 await Task.CompletedTask;
             };
 
-            var renderer = RazorRendererFactory.MakeInstance(new ConfigurationBuilder().Build());
+            var renderer = Helpers.GetRenderer();
 
             var mailer = new CustomMailer(
                 renderer,

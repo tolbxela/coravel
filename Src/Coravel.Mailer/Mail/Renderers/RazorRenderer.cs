@@ -1,74 +1,50 @@
 using System;
-using System.IO;
-using System.Linq;
+using System.Dynamic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Abstractions;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc.Razor;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.AspNetCore.Mvc.ViewEngines;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
+using RazorLight;
 
 namespace Coravel.Mailer.Mail.Renderers
 {
     public class RazorRenderer
     {
-        private IRazorViewEngine _viewEngine;
-        private ITempDataProvider _tempDataProvider;
         private IServiceProvider _serviceProvider;
         private string _logoSrc;
         private string _companyName;
         private string _companyAddress;
         private string _primaryColor;
+        private IRazorLightEngine _razorEngine;
 
         public RazorRenderer(
-            IRazorViewEngine viewEngine,
-            ITempDataProvider tempDataProvider,
             IServiceProvider serviceProvider,
-            IConfiguration config)
+            IConfiguration config,
+            IRazorLightEngine razorEngine)
         {
-            this._viewEngine = viewEngine;
-            this._tempDataProvider = tempDataProvider;
             this._serviceProvider = serviceProvider;
-
             this._logoSrc = config?.GetValue<string>("Coravel:Mail:LogoSrc");
             this._companyName = config?.GetValue<string>("Coravel:Mail:CompanyName");
             this._companyAddress = config?.GetValue<string>("Coravel:Mail:CompanyAddress");
             this._primaryColor = config?.GetValue<string>("Coravel:Mail:PrimaryColor");
+            this._razorEngine = razorEngine;
         }
 
-        public async Task<string> RenderViewToStringAsync<TModel>(string viewName, TModel model)
+        public async Task<string> RenderViewToStringAsync<TModel>(string viewPath, TModel model)
         {
-            var actionContext = GetActionContext();
-            var view = FindView(actionContext, viewName);
+            var viewBag = new ExpandoObject();
+            this.BindConfigurationToViewBag(viewBag);
 
-            using (var output = new StringWriter())
+            return await this.RenderAsync(viewPath, model, viewBag);               
+        }
+
+        private async Task<string> RenderAsync<TModel>(string viewPath, TModel model, ExpandoObject viewBag)
+        {
+            var cached = this._razorEngine.Handler.Cache.RetrieveTemplate(viewPath);
+
+            if(cached.Success)
             {
-                var viewContext = new ViewContext(
-                    actionContext,
-                    view,
-                    new ViewDataDictionary<TModel>(
-                        metadataProvider: new EmptyModelMetadataProvider(),
-                        modelState: new ModelStateDictionary())
-                    {
-                        Model = model
-                    },
-                    new TempDataDictionary(
-                        actionContext.HttpContext,
-                        this._tempDataProvider),
-                    output,
-                    new HtmlHelperOptions());
-
-                this.BindConfigurationToViewBag(viewContext.ViewBag);
-
-                await view.RenderAsync(viewContext);
-
-                return output.ToString();
-            }
+                return await this._razorEngine.RenderTemplateAsync(cached.Template.TemplatePageFactory(), model, viewBag);
+            }            
+            return await this._razorEngine.CompileRenderAsync(viewPath, model, viewBag);
         }
 
         private void BindConfigurationToViewBag(dynamic viewBag)
@@ -77,35 +53,6 @@ namespace Coravel.Mailer.Mail.Renderers
             viewBag.CompanyName = this._companyName;
             viewBag.CompanyAddress = this._companyAddress;
             viewBag.PrimaryColor = this._primaryColor;
-        }
-
-        private IView FindView(ActionContext actionContext, string viewPath)
-        {
-            var getViewResult = this._viewEngine.GetView(viewPath, viewPath, false);
-            if (getViewResult.Success)
-            {
-                return getViewResult.View;
-            }
-
-            var findViewResult = this._viewEngine.FindView(actionContext, viewPath, isMainPage: false);
-            if (findViewResult.Success)
-            {
-                return findViewResult.View;
-            }
-
-            var searchedLocations = getViewResult.SearchedLocations.Concat(findViewResult.SearchedLocations);
-            var errorMessage = string.Join(
-                Environment.NewLine,
-                new[] { $"Unable to find view '{viewPath}'. The following locations were searched:" }.Concat(searchedLocations)); ;
-
-            throw new InvalidOperationException(errorMessage);
-        }
-
-        private ActionContext GetActionContext()
-        {
-            var httpContext = new DefaultHttpContext();
-            httpContext.RequestServices = this._serviceProvider;
-            return new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
         }
     }
 }
